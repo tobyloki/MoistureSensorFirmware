@@ -2,6 +2,8 @@
 
 - Main branch @ commit 80a22dc22965714d2e0cb4b83949878685d2aa73 https://github.com/espressif/esp-matter
 
+## Clone
+
 ```bash
 git clone --recursive https://github.com/tobyloki/MoistureSensorFirmware.git
 ```
@@ -18,7 +20,24 @@ chmod +x ./esp-matter/export.sh
 ```
 
 ```bash
-cd firmware
-. /Users/alex/Desktop/esp-idf-v4.4.3/export.sh
-./esp-matter/export.sh
+. ~/matter/esp-idf/export.sh
+. ./esp-matter/export.sh
 ```
+
+## Build
+
+```bash
+cd firmware
+idf.py build
+```
+
+## Flash
+
+```bash
+idf.py flash monitor
+```
+
+## Commissioning Note
+
+- Make sure to disable VPN before commissioning
+- Ensure WiFi network supports 2.4GHz
