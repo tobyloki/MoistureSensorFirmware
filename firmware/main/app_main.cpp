@@ -19,8 +19,26 @@
 
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Server.h>
+
 static const char *TAG = "app_main";
-uint16_t light_endpoint_id = 0;
+uint16_t temperature_endpoint_id;
+uint16_t pressure_endpoint_id;
+uint16_t humidity_endpoint_id;
+
+// begin timer stuff
+typedef struct
+{
+    esp_timer_handle_t oneshot_timer;
+    void (*cb)();
+} _timer;
+void startTimer(uint64_t time_us, _timer *timer);
+void cancelTimer(_timer *timer);
+void measureCb(void);
+_timer measureTimer = {
+    .oneshot_timer = NULL,
+    .cb = measureCb
+};
+// end timer stuff
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -128,7 +146,9 @@ extern "C" void app_main()
     nvs_flash_init();
 
     /* Initialize driver */
-    app_driver_handle_t light_handle = app_driver_light_init();
+    app_driver_handle_t temperature_handle = app_driver_temperature_init();
+    app_driver_handle_t pressure_handle = app_driver_pressure_init();
+    app_driver_handle_t humidity_handle = app_driver_humidity_init();
     app_driver_handle_t button_handle = app_driver_button_init();
     app_reset_button_register(button_handle);
 
@@ -136,30 +156,56 @@ extern "C" void app_main()
     node::config_t node_config;
     node_t *node = node::create(&node_config, app_attribute_update_cb, app_identification_cb);
 
-    color_temperature_light::config_t light_config;
-    light_config.on_off.on_off = DEFAULT_POWER;
-    light_config.on_off.lighting.start_up_on_off = nullptr;
-    light_config.level_control.current_level = DEFAULT_BRIGHTNESS;
-    light_config.level_control.lighting.start_up_current_level = DEFAULT_BRIGHTNESS;
-    light_config.color_control.color_mode = EMBER_ZCL_COLOR_MODE_COLOR_TEMPERATURE;
-    light_config.color_control.enhanced_color_mode = EMBER_ZCL_COLOR_MODE_COLOR_TEMPERATURE;
-    light_config.color_control.color_temperature.startup_color_temperature_mireds = nullptr;
-    endpoint_t *endpoint = color_temperature_light::create(node, &light_config, ENDPOINT_FLAG_NONE, light_handle);
+    // color_temperature_light::config_t light_config;
+    // light_config.on_off.on_off = DEFAULT_POWER;
+    // light_config.on_off.lighting.start_up_on_off = nullptr;
+    // light_config.level_control.current_level = DEFAULT_BRIGHTNESS;
+    // light_config.level_control.lighting.start_up_current_level = DEFAULT_BRIGHTNESS;
+    // light_config.color_control.color_mode = EMBER_ZCL_COLOR_MODE_COLOR_TEMPERATURE;
+    // light_config.color_control.enhanced_color_mode = EMBER_ZCL_COLOR_MODE_COLOR_TEMPERATURE;
+    // light_config.color_control.color_temperature.startup_color_temperature_mireds = nullptr;
+    // endpoint_t *endpoint = color_temperature_light::create(node, &light_config, ENDPOINT_FLAG_NONE, light_handle);
+
+    // endpoint (temperature device type)
+    temperature_sensor::config_t temperature_config;
+    nullable<int16_t> temperature = DEFAULT_TEMPERATURE;
+    temperature_config.temperature_measurement.measured_value = temperature;
+    endpoint_t *temperature_endpoint = temperature_sensor::create(node, &temperature_config, ENDPOINT_FLAG_NONE, temperature_handle);
+    // endpoint (pressure device type)
+    pressure_sensor::config_t pressure_config;
+    nullable<int16_t> pressure = DEFAULT_PRESSURE;
+    pressure_config.pressure_measurement.pressure_measured_value = pressure;
+    endpoint_t *pressure_endpoint = pressure_sensor::create(node, &pressure_config, ENDPOINT_FLAG_NONE, pressure_handle);
+    // endpoint (humidity device type)
+    humidity_sensor::config_t humidity_config;
+    nullable<uint16_t> humidity = DEFAULT_HUMIDITY;
+    humidity_config.humidity_measurement.measured_value = humidity;
+    nullable<uint16_t> deviceId = DEfAULT_THING_NAME;
+    humidity_config.humidity_measurement.min_measured_value = deviceId; // will be using this as the device id
+    nullable<uint16_t> battery = DEFAULT_BATTERY;
+    humidity_config.humidity_measurement.max_measured_value = battery; // will be usings this as the battery percentage
+    endpoint_t *humidity_endpoint = humidity_sensor::create(node, &humidity_config, ENDPOINT_FLAG_NONE, humidity_handle);
 
     /* These node and endpoint handles can be used to create/add other endpoints and clusters. */
-    if (!node || !endpoint) {
+    if (!node || !temperature_endpoint || !pressure_endpoint || !humidity_endpoint) {
         ESP_LOGE(TAG, "Matter node creation failed");
     }
 
-    light_endpoint_id = endpoint::get_id(endpoint);
-    ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
+    // light_endpoint_id = endpoint::get_id(endpoint);
+    // ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
+    temperature_endpoint_id = endpoint::get_id(temperature_endpoint);
+    pressure_endpoint_id = endpoint::get_id(pressure_endpoint);
+    humidity_endpoint_id = endpoint::get_id(humidity_endpoint);
+    ESP_LOGI(TAG, "Temperature created with endpoint_id %d", temperature_endpoint_id);
+    ESP_LOGI(TAG, "Pressure created with endpoint_id %d", pressure_endpoint_id);
+    ESP_LOGI(TAG, "Humidity created with endpoint_id %d", humidity_endpoint_id);
 
     /* Add additional features to the node */
-    cluster_t *cluster = cluster::get(endpoint, ColorControl::Id);
-    cluster::color_control::feature::hue_saturation::config_t hue_saturation_config;
-    hue_saturation_config.current_hue = DEFAULT_HUE;
-    hue_saturation_config.current_saturation = DEFAULT_SATURATION;
-    cluster::color_control::feature::hue_saturation::add(cluster, &hue_saturation_config);
+    // cluster_t *cluster = cluster::get(endpoint, ColorControl::Id);
+    // cluster::color_control::feature::hue_saturation::config_t hue_saturation_config;
+    // hue_saturation_config.current_hue = DEFAULT_HUE;
+    // hue_saturation_config.current_saturation = DEFAULT_SATURATION;
+    // cluster::color_control::feature::hue_saturation::add(cluster, &hue_saturation_config);
 
     /* Matter start */
     err = esp_matter::start(app_event_cb);
@@ -168,11 +214,105 @@ extern "C" void app_main()
     }
 
     /* Starting driver with default values */
-    app_driver_light_set_defaults(light_endpoint_id);
+    // app_driver_light_set_defaults(light_endpoint_id);
+    app_driver_temperature_set_defaults(temperature_endpoint_id);
+    app_driver_pressure_set_defaults(pressure_endpoint_id);
+    app_driver_humidity_set_defaults(humidity_endpoint_id);
 
 #if CONFIG_ENABLE_CHIP_SHELL
     esp_matter::console::diagnostics_register_commands();
     esp_matter::console::wifi_register_commands();
     esp_matter::console::init();
 #endif
+
+    startTimer(5 * 1000 * 1000, &measureTimer);
+}
+
+void reportData(uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val) {
+    node_t *node = node::get();
+    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    cluster_t *cluster = cluster::get(endpoint, cluster_id);
+    attribute_t *attribute = attribute::get(cluster, attribute_id);
+
+    attribute::update(endpoint_id, cluster_id, attribute_id, val);
+}
+
+void measureCb() {
+    ESP_LOGI(TAG, "Measure callback");
+
+    // TODO: code goes here to measure stuff and report back
+
+    uint16_t endpoint_id = temperature_endpoint_id;
+    uint32_t cluster_id = TemperatureMeasurement::Id;
+    uint32_t attribute_id = TemperatureMeasurement::Attributes::MeasuredValue::Id;
+
+    node_t *node = node::get();
+    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    cluster_t *cluster = cluster::get(endpoint, cluster_id);
+    attribute_t *attribute = attribute::get(cluster, attribute_id);
+
+    esp_matter_attr_val_t val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.i16 = 50;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+
+
+    // esp_matter_attr_val_t temperature = esp_matter_invalid(NULL);
+    // temperature.val.i16 = 20;
+    // reportData(temperature_endpoint_id, TemperatureMeasurement::Id, TemperatureMeasurement::Attributes::MeasuredValue::Id, &temperature);
+
+    // esp_matter_attr_val_t pressure = esp_matter_invalid(NULL);
+    // pressure.val.i16 = 1000;
+    // reportData(pressure_endpoint_id, PressureMeasurement::Id, PressureMeasurement::Attributes::MeasuredValue::Id, &pressure);
+
+    // esp_matter_attr_val_t humidity = esp_matter_invalid(NULL);
+    // humidity.val.u16 = 50;
+    // reportData(humidity_endpoint_id, RelativeHumidityMeasurement::Id, RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, &humidity);
+
+    // esp_matter_attr_val_t battery = esp_matter_invalid(NULL);
+    // battery.val.u16 = 100;
+    // reportData(humidity_endpoint_id, RelativeHumidityMeasurement::Id, RelativeHumidityMeasurement::Attributes::MaxMeasuredValue::Id, &battery);
+
+    startTimer(5 * 1000 * 1000, &measureTimer);
+}
+
+void timerCb(void *arg)
+{
+    ESP_LOGI(TAG, "Timer callback");
+    ESP_ERROR_CHECK(esp_timer_delete(((_timer *)arg)->oneshot_timer));
+    ((_timer *)arg)->oneshot_timer = NULL;
+
+    if (((_timer *)arg)->cb != NULL)
+        ((_timer *)arg)->cb();
+}
+
+void cancelTimer(_timer *timer)
+{
+    if (timer->oneshot_timer != NULL)
+    {
+        ESP_ERROR_CHECK(esp_timer_stop(timer->oneshot_timer));
+        ESP_ERROR_CHECK(esp_timer_delete(timer->oneshot_timer));
+        timer->oneshot_timer = NULL;
+        ESP_LOGI(TAG, "Timer canceled");
+    }
+    else
+    {
+        // ESP_LOGI(TAG, "Timer already canceled");
+    }
+}
+
+void startTimer(uint64_t time_us, _timer *timer)
+{
+    if (timer->oneshot_timer != NULL)
+        cancelTimer(timer);
+
+    const esp_timer_create_args_t oneshot_timer_args = {
+        .callback = &timerCb,
+        .arg = (void *)timer};
+    // Create timer
+    ESP_ERROR_CHECK(esp_timer_create(&oneshot_timer_args, &(timer->oneshot_timer)));
+    // Start timer
+    ESP_ERROR_CHECK(esp_timer_start_once(timer->oneshot_timer, time_us));
+    ESP_LOGI(TAG, "Started timer for: %" PRIu64 " us", time_us);
 }

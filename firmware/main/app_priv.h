@@ -11,34 +11,47 @@
 #include <esp_err.h>
 #include <esp_matter.h>
 
-/** Standard max values (used for remapping attributes) */
-#define STANDARD_BRIGHTNESS 100
-#define STANDARD_HUE 360
-#define STANDARD_SATURATION 100
-#define STANDARD_TEMPERATURE_FACTOR 1000000
-
-/** Matter max values (used for remapping attributes) */
-#define MATTER_BRIGHTNESS 254
-#define MATTER_HUE 254
-#define MATTER_SATURATION 254
-#define MATTER_TEMPERATURE_FACTOR 1000000
-
 /** Default attribute values used during initialization */
 #define DEFAULT_POWER true
 #define DEFAULT_BRIGHTNESS 64
 #define DEFAULT_HUE 128
 #define DEFAULT_SATURATION 254
 
+/** Default attribute values used during initialization */
+#define DEFAULT_TEMPERATURE 36
+#define DEFAULT_PRESSURE 20
+#define DEFAULT_HUMIDITY 16
+#define DEfAULT_THING_NAME 0x0506
+#define DEFAULT_BATTERY 86
+
 typedef void *app_driver_handle_t;
 
-/** Initialize the light driver
+/** Initialize the temperature driver
  *
- * This initializes the light driver associated with the selected board.
+ * This initializes the temperature driver associated with the selected board.
  *
  * @return Handle on success.
  * @return NULL in case of failure.
  */
-app_driver_handle_t app_driver_light_init();
+app_driver_handle_t app_driver_temperature_init();
+
+/** Initialize the pressure driver
+ *
+ * This initializes the pressure driver associated with the selected board.
+ *
+ * @return Handle on success.
+ * @return NULL in case of failure.
+ */
+app_driver_handle_t app_driver_pressure_init();
+
+/** Initialize the humidity driver
+ *
+ * This initializes the humidity driver associated with the selected board.
+ *
+ * @return Handle on success.
+ * @return NULL in case of failure.
+ */
+app_driver_handle_t app_driver_humidity_init();
 
 /** Initialize the button driver
  *
@@ -65,7 +78,7 @@ app_driver_handle_t app_driver_button_init();
 esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_t endpoint_id, uint32_t cluster_id,
                                       uint32_t attribute_id, esp_matter_attr_val_t *val);
 
-/** Set defaults for light driver
+/** Set defaults for temperature driver
  *
  * Set the attribute drivers to their default values from the created data model.
  *
@@ -74,4 +87,26 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
  * @return ESP_OK on success.
  * @return error in case of failure.
  */
-esp_err_t app_driver_light_set_defaults(uint16_t endpoint_id);
+esp_err_t app_driver_temperature_set_defaults(uint16_t endpoint_id);
+
+/** Set defaults for pressure driver
+ *
+ * Set the attribute drivers to their default values from the created data model.
+ *
+ * @param[in] endpoint_id Endpoint ID of the driver.
+ *
+ * @return ESP_OK on success.
+ * @return error in case of failure.
+ */
+esp_err_t app_driver_pressure_set_defaults(uint16_t endpoint_id);
+
+/** Set defaults for humidity driver
+ *
+ * Set the attribute drivers to their default values from the created data model.
+ *
+ * @param[in] endpoint_id Endpoint ID of the driver.
+ *
+ * @return ESP_OK on success.
+ * @return error in case of failure.
+ */
+esp_err_t app_driver_humidity_set_defaults(uint16_t endpoint_id);

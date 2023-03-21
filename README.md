@@ -24,6 +24,13 @@ chmod +x ./esp-matter/export.sh
 . ./esp-matter/export.sh
 ```
 
+- Copy modified files to esp-matter
+  - Added missing humidity cluster and device type
+  ```bash
+  chmod +x ./initialFiles/copyFiles.sh
+  ./initialFiles/copyFiles.sh
+  ```
+
 ## Build
 
 ```bash
@@ -34,6 +41,7 @@ idf.py build
 ## Flash
 
 ```bash
+idf.py erase-flash flash monitor
 idf.py flash monitor
 ```
 
