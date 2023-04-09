@@ -2,6 +2,10 @@
 
 - Main branch @ commit 80a22dc22965714d2e0cb4b83949878685d2aa73 https://github.com/espressif/esp-matter
 
+## Prerequisites
+
+- Follow pre-reqs for esp-idf and matter setup at https://docs.espressif.com/projects/esp-matter/en/main/esp32/developing.html
+
 ## Clone
 
 ```bash
@@ -13,6 +17,8 @@ git submodule update --init --recursive
 ```
 
 ## Setup
+
+Note: Execute all these commands from within the root directory
 
 ```bash
 ./esp-matter/install.sh
@@ -45,7 +51,38 @@ idf.py erase-flash flash monitor
 idf.py flash monitor
 ```
 
-## Commissioning Note
+## Commissioning Notes
 
 - Make sure to disable VPN before commissioning
 - Ensure WiFi network supports 2.4GHz
+
+## Arduino Notes
+
+- Follow instructions at https://github.com/espressif/esp-matter/issues/116#issuecomment-1356673244 which explains how to use arduino-esp32 library with esp-matter
+  - Includes basic instructions from https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/esp-idf_component.html with extra info on how to fix errors when using with esp-matter
+  - Currently solved by running the copyFiles.sh command from #Build section
+- To add more Arduino libraries
+
+  1. Clone library as submodule
+
+  ```bash
+  cd ./initialFiles/arduino/
+  git submodule add <repo>
+  git submodule update --init --recursive
+  ```
+
+  2. Add reference to library include and src files to `./initialFiles/arduino/CMakeLists.txt`
+
+  ```cmake
+  set(LIBRARY_SRCS
+    ...
+    libraries/arduino-sht/SHTSensor.cpp
+  )
+
+  ...
+
+  set(includedirs
+    ...
+    libraries/arduino-sht
+  )
+  ```

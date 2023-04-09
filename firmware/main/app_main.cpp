@@ -20,6 +20,14 @@
 #include <app/server/CommissioningWindowManager.h>
 #include <app/server/Server.h>
 
+#include "Arduino.h"
+#include "SHTSensor.h"
+#include "Wire.h"
+#include "esp32-hal.h"
+#include "esp_matter_attribute_utils.h"
+
+SHTSensor sht(SHTSensor::SHT3X);
+
 static const char *TAG = "app_main";
 uint16_t temperature_endpoint_id;
 uint16_t pressure_endpoint_id;
@@ -228,19 +236,14 @@ extern "C" void app_main()
     startTimer(5 * 1000 * 1000, &measureTimer);
 }
 
-void reportData(uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val) {
-    node_t *node = node::get();
-    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
-    cluster_t *cluster = cluster::get(endpoint, cluster_id);
-    attribute_t *attribute = attribute::get(cluster, attribute_id);
-
-    attribute::update(endpoint_id, cluster_id, attribute_id, val);
-}
-
 void measureCb() {
     ESP_LOGI(TAG, "Measure callback");
 
-    // TODO: code goes here to measure stuff and report back
+    // NOTE: code goes here to measure stuff and report to matter
+    sht.init();
+    float sht_temp = sht.getTemperature();
+    float sht_humidity = sht.getHumidity();
+    ESP_LOGI("SHT", "temp = %0.1f, humidity = %0.1f", sht_temp, sht_humidity);
 
     uint16_t endpoint_id = temperature_endpoint_id;
     uint32_t cluster_id = TemperatureMeasurement::Id;
@@ -253,26 +256,22 @@ void measureCb() {
 
     esp_matter_attr_val_t val = esp_matter_invalid(NULL);
     attribute::get_val(attribute, &val);
-    val.val.i16 = 50;
+    val.val.i16 = sht_temp;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
+    endpoint_id = humidity_endpoint_id;
+    cluster_id = RelativeHumidityMeasurement::Id;
+    attribute_id = RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
 
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
 
-    // esp_matter_attr_val_t temperature = esp_matter_invalid(NULL);
-    // temperature.val.i16 = 20;
-    // reportData(temperature_endpoint_id, TemperatureMeasurement::Id, TemperatureMeasurement::Attributes::MeasuredValue::Id, &temperature);
-
-    // esp_matter_attr_val_t pressure = esp_matter_invalid(NULL);
-    // pressure.val.i16 = 1000;
-    // reportData(pressure_endpoint_id, PressureMeasurement::Id, PressureMeasurement::Attributes::MeasuredValue::Id, &pressure);
-
-    // esp_matter_attr_val_t humidity = esp_matter_invalid(NULL);
-    // humidity.val.u16 = 50;
-    // reportData(humidity_endpoint_id, RelativeHumidityMeasurement::Id, RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, &humidity);
-
-    // esp_matter_attr_val_t battery = esp_matter_invalid(NULL);
-    // battery.val.u16 = 100;
-    // reportData(humidity_endpoint_id, RelativeHumidityMeasurement::Id, RelativeHumidityMeasurement::Attributes::MaxMeasuredValue::Id, &battery);
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = sht_humidity;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
     startTimer(5 * 1000 * 1000, &measureTimer);
 }
