@@ -10,3 +10,6 @@
 [submodule "initialFiles/arduino/I2CSoilMoistureSensor"]
 	path = initialFiles/arduino/I2CSoilMoistureSensor
 	url = https://github.com/Apollon77/I2CSoilMoistureSensor
+[submodule "initialFiles/arduino/SparkFun_VEML7700_Arduino_Library"]
+	path = initialFiles/arduino/SparkFun_VEML7700_Arduino_Library
+	url = https://github.com/sparkfun/SparkFun_VEML7700_Arduino_Library
