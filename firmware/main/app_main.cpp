@@ -233,6 +233,8 @@ extern "C" void app_main()
     esp_matter::console::init();
 #endif
 
+    initArduino();
+    Wire.begin();
     startTimer(5 * 1000 * 1000, &measureTimer);
 }
 
