@@ -30,8 +30,9 @@ chmod +x ./esp-matter/export.sh
 . ./esp-matter/export.sh
 ```
 
-- Copy modified files to esp-matter
-  - Added missing humidity cluster and device type
+- Copy modified files
+  - Added missing humidity cluster and device type to esp-matter
+  - Copy arduino libraries
   ```bash
   chmod +x ./initialFiles/copyFiles.sh
   ./initialFiles/copyFiles.sh
@@ -60,7 +61,7 @@ idf.py flash monitor
 
 - Follow instructions at https://github.com/espressif/esp-matter/issues/116#issuecomment-1356673244 which explains how to use arduino-esp32 library with esp-matter
   - Includes basic instructions from https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/esp-idf_component.html with extra info on how to fix errors when using with esp-matter
-  - Currently solved by running the copyFiles.sh command from #Build section
+  - Currently solved by running the copyFiles.sh command from #Setup section
 - To add more Arduino libraries
 
   1. Clone library as submodule
@@ -86,3 +87,7 @@ idf.py flash monitor
     libraries/arduino-sht
   )
   ```
+
+  3. Update `./initialFiles/copyFiles.sh` to copy new arduino library to arduino libraries directory
+
+  4. Run `./initialFiles/copyFiles.sh`

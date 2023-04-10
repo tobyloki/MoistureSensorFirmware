@@ -19,8 +19,11 @@
 
 /** Default attribute values used during initialization */
 #define DEFAULT_TEMPERATURE 36
-#define DEFAULT_PRESSURE 20
 #define DEFAULT_HUMIDITY 16
+#define DEFAULT_PRESSURE 20
+#define DEFAULT_SOIL_MOISTURE 21
+#define DEFAULT_LIGHT 22
+
 #define DEfAULT_THING_NAME 0x0506
 #define DEFAULT_BATTERY 86
 
@@ -33,25 +36,7 @@ typedef void *app_driver_handle_t;
  * @return Handle on success.
  * @return NULL in case of failure.
  */
-app_driver_handle_t app_driver_temperature_init();
-
-/** Initialize the pressure driver
- *
- * This initializes the pressure driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
- */
-app_driver_handle_t app_driver_pressure_init();
-
-/** Initialize the humidity driver
- *
- * This initializes the humidity driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
- */
-app_driver_handle_t app_driver_humidity_init();
+app_driver_handle_t app_driver_sensor_init();
 
 /** Initialize the button driver
  *
@@ -87,7 +72,7 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
  * @return ESP_OK on success.
  * @return error in case of failure.
  */
-esp_err_t app_driver_temperature_set_defaults(uint16_t endpoint_id);
+// esp_err_t app_driver_temperature_set_defaults(uint16_t endpoint_id);
 
 /** Set defaults for pressure driver
  *
@@ -98,7 +83,7 @@ esp_err_t app_driver_temperature_set_defaults(uint16_t endpoint_id);
  * @return ESP_OK on success.
  * @return error in case of failure.
  */
-esp_err_t app_driver_pressure_set_defaults(uint16_t endpoint_id);
+// esp_err_t app_driver_pressure_set_defaults(uint16_t endpoint_id);
 
 /** Set defaults for humidity driver
  *
@@ -109,4 +94,4 @@ esp_err_t app_driver_pressure_set_defaults(uint16_t endpoint_id);
  * @return ESP_OK on success.
  * @return error in case of failure.
  */
-esp_err_t app_driver_humidity_set_defaults(uint16_t endpoint_id);
+// esp_err_t app_driver_humidity_set_defaults(uint16_t endpoint_id);

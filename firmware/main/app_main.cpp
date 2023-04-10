@@ -36,8 +36,10 @@ VEML7700 ls;
 
 static const char *TAG = "app_main";
 uint16_t temperature_endpoint_id;
-uint16_t pressure_endpoint_id;
 uint16_t humidity_endpoint_id;
+uint16_t pressure_endpoint_id;
+uint16_t soil_endpoint_id;
+uint16_t light_endpoint_id;
 
 // begin timer stuff
 typedef struct
@@ -160,9 +162,11 @@ extern "C" void app_main()
     nvs_flash_init();
 
     /* Initialize driver */
-    app_driver_handle_t temperature_handle = app_driver_temperature_init();
-    app_driver_handle_t pressure_handle = app_driver_pressure_init();
-    app_driver_handle_t humidity_handle = app_driver_humidity_init();
+    app_driver_handle_t temperature_handle = app_driver_sensor_init();
+    app_driver_handle_t humidity_handle = app_driver_sensor_init();
+    app_driver_handle_t pressure_handle = app_driver_sensor_init();
+    app_driver_handle_t soil_moisture_handle = app_driver_sensor_init();
+    app_driver_handle_t light_handle = app_driver_sensor_init();
     app_driver_handle_t button_handle = app_driver_button_init();
     app_reset_button_register(button_handle);
 
@@ -185,11 +189,6 @@ extern "C" void app_main()
     nullable<int16_t> temperature = DEFAULT_TEMPERATURE;
     temperature_config.temperature_measurement.measured_value = temperature;
     endpoint_t *temperature_endpoint = temperature_sensor::create(node, &temperature_config, ENDPOINT_FLAG_NONE, temperature_handle);
-    // endpoint (pressure device type)
-    pressure_sensor::config_t pressure_config;
-    nullable<int16_t> pressure = DEFAULT_PRESSURE;
-    pressure_config.pressure_measurement.pressure_measured_value = pressure;
-    endpoint_t *pressure_endpoint = pressure_sensor::create(node, &pressure_config, ENDPOINT_FLAG_NONE, pressure_handle);
     // endpoint (humidity device type)
     humidity_sensor::config_t humidity_config;
     nullable<uint16_t> humidity = DEFAULT_HUMIDITY;
@@ -199,20 +198,39 @@ extern "C" void app_main()
     nullable<uint16_t> battery = DEFAULT_BATTERY;
     humidity_config.humidity_measurement.max_measured_value = battery; // will be usings this as the battery percentage
     endpoint_t *humidity_endpoint = humidity_sensor::create(node, &humidity_config, ENDPOINT_FLAG_NONE, humidity_handle);
+    // endpoint (pressure device type)
+    pressure_sensor::config_t pressure_config;
+    nullable<int16_t> pressure = DEFAULT_PRESSURE;
+    pressure_config.pressure_measurement.pressure_measured_value = pressure;
+    endpoint_t *pressure_endpoint = pressure_sensor::create(node, &pressure_config, ENDPOINT_FLAG_NONE, pressure_handle);
+    // endpoint (soil moisture device type)
+    flow_sensor::config_t soil_moisture_config;
+    nullable<uint16_t> soil_moisture = DEFAULT_SOIL_MOISTURE;
+    soil_moisture_config.flow_measurement.flow_measured_value = soil_moisture;
+    endpoint_t *soil_moisture_endpoint = flow_sensor::create(node, &soil_moisture_config, ENDPOINT_FLAG_NONE, soil_moisture_handle);
+    // endpoint (light device type)
+    light_sensor::config_t light_config;
+    nullable<uint16_t> light = DEFAULT_LIGHT;
+    light_config.illuminance_measurement.illuminance_measured_value = light;
+    endpoint_t *light_endpoint = light_sensor::create(node, &light_config, ENDPOINT_FLAG_NONE, light_handle);    
 
     /* These node and endpoint handles can be used to create/add other endpoints and clusters. */
-    if (!node || !temperature_endpoint || !pressure_endpoint || !humidity_endpoint) {
+    if (!node || !temperature_endpoint || !pressure_endpoint || !humidity_endpoint || !soil_moisture_endpoint || !light_endpoint) {
         ESP_LOGE(TAG, "Matter node creation failed");
     }
 
     // light_endpoint_id = endpoint::get_id(endpoint);
     // ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
     temperature_endpoint_id = endpoint::get_id(temperature_endpoint);
-    pressure_endpoint_id = endpoint::get_id(pressure_endpoint);
     humidity_endpoint_id = endpoint::get_id(humidity_endpoint);
+    pressure_endpoint_id = endpoint::get_id(pressure_endpoint);
+    soil_endpoint_id = endpoint::get_id(soil_moisture_endpoint);
+    light_endpoint_id = endpoint::get_id(light_endpoint);
     ESP_LOGI(TAG, "Temperature created with endpoint_id %d", temperature_endpoint_id);
-    ESP_LOGI(TAG, "Pressure created with endpoint_id %d", pressure_endpoint_id);
     ESP_LOGI(TAG, "Humidity created with endpoint_id %d", humidity_endpoint_id);
+    ESP_LOGI(TAG, "Pressure created with endpoint_id %d", pressure_endpoint_id);
+    ESP_LOGI(TAG, "Soil Moisture created with endpoint_id %d", soil_endpoint_id);
+    ESP_LOGI(TAG, "Light created with endpoint_id %d", light_endpoint_id);
 
     /* Add additional features to the node */
     // cluster_t *cluster = cluster::get(endpoint, ColorControl::Id);
@@ -229,9 +247,9 @@ extern "C" void app_main()
 
     /* Starting driver with default values */
     // app_driver_light_set_defaults(light_endpoint_id);
-    app_driver_temperature_set_defaults(temperature_endpoint_id);
-    app_driver_pressure_set_defaults(pressure_endpoint_id);
-    app_driver_humidity_set_defaults(humidity_endpoint_id);
+    // app_driver_temperature_set_defaults(temperature_endpoint_id);
+    // app_driver_pressure_set_defaults(pressure_endpoint_id);
+    // app_driver_humidity_set_defaults(humidity_endpoint_id);
 
 #if CONFIG_ENABLE_CHIP_SHELL
     esp_matter::console::diagnostics_register_commands();
@@ -266,7 +284,14 @@ void measureCb() {
     float lux = ls.getLux();
     ESP_LOGI("VEML", "light = %0.1f lux", lux);
 
-    // temp
+    // override to defaults temporarily
+    sht_temp = DEFAULT_TEMPERATURE;
+    sht_humidity = DEFAULT_HUMIDITY;
+    pressure = DEFAULT_PRESSURE;
+    soil_capacitance = DEFAULT_SOIL_MOISTURE;
+    lux = DEFAULT_LIGHT;
+
+    // temperature
     uint16_t endpoint_id = temperature_endpoint_id;
     uint32_t cluster_id = TemperatureMeasurement::Id;
     uint32_t attribute_id = TemperatureMeasurement::Attributes::MeasuredValue::Id;
@@ -308,7 +333,37 @@ void measureCb() {
 
     val = esp_matter_invalid(NULL);
     attribute::get_val(attribute, &val);
-    val.val.u16 = pressure;
+    val.val.i16 = pressure;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+    // soil moisture
+    endpoint_id = soil_endpoint_id;
+    cluster_id = FlowMeasurement::Id;
+    attribute_id = FlowMeasurement::Attributes::MeasuredValue::Id;
+
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
+
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = soil_capacitance;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+    // light
+    endpoint_id = light_endpoint_id;
+    cluster_id = IlluminanceMeasurement::Id;
+    attribute_id = IlluminanceMeasurement::Attributes::MeasuredValue::Id;
+
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
+
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = lux;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
     startTimer(5 * 1000 * 1000, &measureTimer);
