@@ -22,11 +22,17 @@
 
 #include "Arduino.h"
 #include "SHTSensor.h"
+#include "LPS.h"
+#include "I2CSoilMoistureSensor.h"
+#include "SparkFun_VEML7700_Arduino_Library.h"
 #include "Wire.h"
 #include "esp32-hal.h"
 #include "esp_matter_attribute_utils.h"
 
 SHTSensor sht(SHTSensor::SHT3X);
+LPS ps;
+I2CSoilMoistureSensor soil_sensor;
+VEML7700 ls;
 
 static const char *TAG = "app_main";
 uint16_t temperature_endpoint_id;
@@ -235,6 +241,10 @@ extern "C" void app_main()
 
     initArduino();
     Wire.begin();
+    ps.init();
+    ps.enableDefault();
+    soil_sensor.begin();
+    ls.begin();
     startTimer(5 * 1000 * 1000, &measureTimer);
 }
 
@@ -245,8 +255,18 @@ void measureCb() {
     sht.init();
     float sht_temp = sht.getTemperature();
     float sht_humidity = sht.getHumidity();
-    ESP_LOGI("SHT", "temp = %0.1f, humidity = %0.1f", sht_temp, sht_humidity);
+    ESP_LOGI("SHT", "temp = %0.1f C, humidity = %0.1f \%", sht_temp, sht_humidity);
+    
+    float pressure = ps.readPressureInchesHg();
+    ESP_LOGI("LPS", "pressure = %f inchesHg", pressure);
 
+    uint16_t soil_capacitance = soil_sensor.getCapacitance();
+    ESP_LOGI("SOIL", "capacitance = %d", soil_capacitance);
+
+    float lux = ls.getLux();
+    ESP_LOGI("VEML", "light = %0.1f lux", lux);
+
+    // temp
     uint16_t endpoint_id = temperature_endpoint_id;
     uint32_t cluster_id = TemperatureMeasurement::Id;
     uint32_t attribute_id = TemperatureMeasurement::Attributes::MeasuredValue::Id;
@@ -261,6 +281,7 @@ void measureCb() {
     val.val.i16 = sht_temp;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
+    // humidity
     endpoint_id = humidity_endpoint_id;
     cluster_id = RelativeHumidityMeasurement::Id;
     attribute_id = RelativeHumidityMeasurement::Attributes::MeasuredValue::Id;
@@ -273,6 +294,21 @@ void measureCb() {
     val = esp_matter_invalid(NULL);
     attribute::get_val(attribute, &val);
     val.val.u16 = sht_humidity;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+    // pressure
+    endpoint_id = pressure_endpoint_id;
+    cluster_id = PressureMeasurement::Id;
+    attribute_id = PressureMeasurement::Attributes::MeasuredValue::Id;
+
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
+
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = pressure;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
     startTimer(5 * 1000 * 1000, &measureTimer);
