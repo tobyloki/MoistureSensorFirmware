@@ -13,3 +13,6 @@
 [submodule "initialFiles/arduino/SparkFun_VEML7700_Arduino_Library"]
 	path = initialFiles/arduino/SparkFun_VEML7700_Arduino_Library
 	url = https://github.com/sparkfun/SparkFun_VEML7700_Arduino_Library
+[submodule "initialFiles/arduino/lps-arduino"]
+	path = initialFiles/arduino/lps-arduino
+	url = https://github.com/pololu/lps-arduino
