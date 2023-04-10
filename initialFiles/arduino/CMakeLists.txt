@@ -136,6 +136,9 @@ set(LIBRARY_SRCS
     libraries/WiFiProv/src/WiFiProv.cpp
     libraries/Wire/src/Wire.cpp
     libraries/arduino-sht/SHTSensor.cpp
+    libraries/lps-arduino/LPS.cpp
+    ./libraries/I2CSoilMoistureSensor/I2CSoilMoistureSensor.cpp
+    ./libraries/SparkFun_VEML7700_Arduino_Library/src/SparkFun_VEML7700_Arduino_Library.cpp
 )
 
 set(BLE_SRCS
@@ -206,6 +209,9 @@ set(includedirs
     libraries/WiFiProv/src
     libraries/Wire/src
     libraries/arduino-sht
+    libraries/lps-arduino
+    ./libraries/I2CSoilMoistureSensor
+    ./libraries/SparkFun_VEML7700_Arduino_Library/src
 )
 
 set(srcs ${CORE_SRCS} ${LIBRARY_SRCS} ${BLE_SRCS})
