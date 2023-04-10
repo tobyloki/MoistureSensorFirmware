@@ -7,3 +7,6 @@
 [submodule "initialFiles/arduino/arduino-sht"]
 	path = initialFiles/arduino/arduino-sht
 	url = https://github.com/Sensirion/arduino-sht.git
+[submodule "initialFiles/arduino/I2CSoilMoistureSensor"]
+	path = initialFiles/arduino/I2CSoilMoistureSensor
+	url = https://github.com/Apollon77/I2CSoilMoistureSensor
