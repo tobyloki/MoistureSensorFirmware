@@ -28,6 +28,7 @@
 #include "Wire.h"
 #include "esp32-hal.h"
 #include "esp_matter_attribute_utils.h"
+#include <math.h>
 
 SHTSensor sht(SHTSensor::SHT3X);
 LPS ps;
@@ -266,6 +267,8 @@ extern "C" void app_main()
     startTimer(5 * 1000 * 1000, &measureTimer);
 }
 
+uint16_t battery = DEFAULT_BATTERY;
+
 void measureCb() {
     ESP_LOGI(TAG, "Measure callback");
 
@@ -284,12 +287,15 @@ void measureCb() {
     float lux = ls.getLux();
     ESP_LOGI("VEML", "light = %0.1f lux", lux);
 
-    // override to defaults temporarily
-    sht_temp = DEFAULT_TEMPERATURE;
-    sht_humidity = DEFAULT_HUMIDITY;
-    pressure = DEFAULT_PRESSURE;
-    soil_capacitance = DEFAULT_SOIL_MOISTURE;
-    lux = DEFAULT_LIGHT;
+    // override to defaults temporarily, but with formulas in place according to matter cluster specification
+    sht_temp = 100 * DEFAULT_TEMPERATURE; // degrees C
+    sht_humidity = 100 * DEFAULT_HUMIDITY;  // %
+    pressure = 10 * DEFAULT_PRESSURE;   // kPa
+    soil_capacitance = 10 * DEFAULT_SOIL_MOISTURE;   // flow
+    lux = 10000 * log(DEFAULT_LIGHT) + 1;    // illuminance inside of log is in lux
+
+    uint16_t deviceId = DEfAULT_THING_NAME;
+    battery++;
 
     // temperature
     uint16_t endpoint_id = temperature_endpoint_id;
@@ -364,6 +370,36 @@ void measureCb() {
     val = esp_matter_invalid(NULL);
     attribute::get_val(attribute, &val);
     val.val.u16 = lux;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+    // thing name
+    endpoint_id = humidity_endpoint_id;
+    cluster_id = RelativeHumidityMeasurement::Id;
+    attribute_id = RelativeHumidityMeasurement::Attributes::MinMeasuredValue::Id;
+
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
+
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = deviceId;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &val);
+
+    // battery
+    endpoint_id = humidity_endpoint_id;
+    cluster_id = RelativeHumidityMeasurement::Id;
+    attribute_id = RelativeHumidityMeasurement::Attributes::MaxMeasuredValue::Id;
+
+    node = node::get();
+    endpoint = endpoint::get(node, endpoint_id);
+    cluster = cluster::get(endpoint, cluster_id);
+    attribute = attribute::get(cluster, attribute_id);
+
+    val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &val);
+    val.val.u16 = battery;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
     startTimer(5 * 1000 * 1000, &measureTimer);

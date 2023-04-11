@@ -24,7 +24,7 @@
 #define DEFAULT_SOIL_MOISTURE 21
 #define DEFAULT_LIGHT 22
 
-#define DEfAULT_THING_NAME 0x0506
+#define DEfAULT_THING_NAME 0x0506   // decimal: 1286
 #define DEFAULT_BATTERY 86
 
 typedef void *app_driver_handle_t;
