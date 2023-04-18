@@ -264,7 +264,7 @@ extern "C" void app_main()
     ps.enableDefault();
     soil_sensor.begin();
     ls.begin();
-    startTimer(5 * 1000 * 1000, &measureTimer);
+    startTimer(1 * 1000 * 1000, &measureTimer);
 }
 
 uint16_t battery = DEFAULT_BATTERY;
@@ -287,13 +287,21 @@ void measureCb() {
     float lux = ls.getLux();
     ESP_LOGI("VEML", "light = %0.1f lux", lux);
 
-    // override to defaults temporarily, but with formulas in place according to matter cluster specification
-    sht_temp = 100 * DEFAULT_TEMPERATURE; // degrees C
-    sht_humidity = 100 * DEFAULT_HUMIDITY;  // %
-    pressure = 10 * DEFAULT_PRESSURE;   // kPa
-    soil_capacitance = 10 * DEFAULT_SOIL_MOISTURE;   // flow
-    lux = 10000 * log(DEFAULT_LIGHT) + 1;    // illuminance inside of log is in lux
+    // override to defaults temporarily
+    sht_temp = DEFAULT_TEMPERATURE;
+    sht_humidity = DEFAULT_HUMIDITY;
+    pressure = DEFAULT_PRESSURE;
+    soil_capacitance = DEFAULT_SOIL_MOISTURE;
+    lux = DEFAULT_LIGHT;
 
+    // apply formulas according to matter cluster specification
+    sht_temp *= 100; // degrees C
+    sht_humidity *= 100;  // %
+    pressure *= 10;   // kPa
+    soil_capacitance *= 10;   // flow
+    lux = 10000 * log(lux) + 1;    // illuminance inside of log is in lux
+
+    // set battery and deviceId
     uint16_t deviceId = DEfAULT_THING_NAME;
     battery++;
 
@@ -402,7 +410,7 @@ void measureCb() {
     val.val.u16 = battery;
     attribute::update(endpoint_id, cluster_id, attribute_id, &val);
 
-    startTimer(5 * 1000 * 1000, &measureTimer);
+    startTimer(1 * 1000 * 1000, &measureTimer);
 }
 
 void timerCb(void *arg)
