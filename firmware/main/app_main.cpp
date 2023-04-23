@@ -6,6 +6,8 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "driver/gpio.h"
+
 #include <esp_err.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
@@ -175,4 +177,8 @@ extern "C" void app_main()
     esp_matter::console::wifi_register_commands();
     esp_matter::console::init();
 #endif
+
+    // initialize gpio
+    gpio_pad_select_gpio(4);
+    gpio_set_direction((gpio_num_t) 4, GPIO_MODE_OUTPUT);
 }

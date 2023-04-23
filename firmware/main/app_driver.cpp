@@ -6,6 +6,8 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
+#include "driver/gpio.h"
+
 #include <esp_log.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,9 @@ extern uint16_t light_endpoint_id;
 /* Do any conversions/remapping for the actual value here */
 static esp_err_t app_driver_light_set_power(led_driver_handle_t handle, esp_matter_attr_val_t *val)
 {
+    ESP_LOGI(TAG, "Set power %d", val->val.b);
+    gpio_set_level((gpio_num_t)4, val->val.b);
+
     return led_driver_set_power(handle, val->val.b);
 }
 
