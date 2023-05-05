@@ -288,11 +288,11 @@ void measureCb() {
     ESP_LOGI("VEML", "light = %0.1f lux", lux);
 
     // override to defaults temporarily
-    sht_temp = DEFAULT_TEMPERATURE;
-    sht_humidity = DEFAULT_HUMIDITY;
-    pressure = DEFAULT_PRESSURE;
-    soil_capacitance = DEFAULT_SOIL_MOISTURE;
-    lux = DEFAULT_LIGHT;
+    // sht_temp = DEFAULT_TEMPERATURE;
+    // sht_humidity = DEFAULT_HUMIDITY;
+    // pressure = DEFAULT_PRESSURE;
+    // soil_capacitance = DEFAULT_SOIL_MOISTURE;
+    // lux = DEFAULT_LIGHT;
 
     // apply formulas according to matter cluster specification
     sht_temp *= 100; // degrees C
