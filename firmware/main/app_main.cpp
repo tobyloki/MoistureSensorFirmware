@@ -179,6 +179,6 @@ extern "C" void app_main()
 #endif
 
     // initialize gpio
-    gpio_pad_select_gpio(4);
-    gpio_set_direction((gpio_num_t) 4, GPIO_MODE_OUTPUT);
+    gpio_pad_select_gpio(12);
+    gpio_set_direction((gpio_num_t) 12, GPIO_MODE_OUTPUT);
 }

@@ -28,7 +28,7 @@ extern uint16_t light_endpoint_id;
 static esp_err_t app_driver_light_set_power(led_driver_handle_t handle, esp_matter_attr_val_t *val)
 {
     ESP_LOGI(TAG, "Set power %d", val->val.b);
-    gpio_set_level((gpio_num_t)4, val->val.b);
+    gpio_set_level((gpio_num_t) 12, val->val.b);
 
     return led_driver_set_power(handle, val->val.b);
 }
